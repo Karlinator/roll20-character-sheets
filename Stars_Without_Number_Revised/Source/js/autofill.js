@@ -171,13 +171,21 @@ const getAutofillInfo = (sName, v, inputData, label) => {
     return "";
 };
 const generateAutofillRow = (sName) => {
+    console.log(sName);
     // Event handler for generating a new row when button is pressed
     getAttrs([`generate_${sName}_source`, "ship_class"], v => {
-        const label = v[`generate_${sName}_source`];
+        let label = v[`generate_${sName}_source`];
+        let sNameGet;
+        if (label.slice(0, 5) === "ship_") {
+            label = label.slice(5);
+            sNameGet = "ship-weapons";
+        } else {
+            sNameGet = sName;
+        }
         v.ship_multiplier = getShipMultiplier(v.ship_class);
         v.ship_price_multiplier = getShipPriceMultiplier(v.ship_class);
-        if (label && autofillData[sName].hasOwnProperty(label)) {
-            const data = getAutofillData(sName, v, autofillData[sName][label], label);
+        if (label && autofillData[sNameGet].hasOwnProperty(label)) {
+            const data = getAutofillData(sNameGet, v, autofillData[sNameGet][label], label);
             delete data.class;
             delete data.level;
             fillRepeatingSectionFromData(sName, data);
@@ -187,11 +195,18 @@ const generateAutofillRow = (sName) => {
 const generateAutofillInfo = (sName) => {
     // Event handler for showing info about the selected item
     getAttrs([`generate_${sName}_source`, "ship_class"], v => {
-        const label = v[`generate_${sName}_source`];
+        let label = v[`generate_${sName}_source`];
+        let sNameGet;
+        if (label.slice(0, 5) === "ship_") {
+            label = label.slice(5);
+            sNameGet = "ship-weapons";
+        } else {
+            sNameGet = sName;
+        }
         v.ship_multiplier = getShipMultiplier(v.ship_class);
         v.ship_price_multiplier = getShipPriceMultiplier(v.ship_class);
-        if (label && autofillData[sName].hasOwnProperty(label)) {
-            const info = getAutofillInfo(sName, v, autofillData[sName][label], label);
+        if (label && autofillData[sNameGet].hasOwnProperty(label)) {
+            const info = getAutofillInfo(sNameGet, v, autofillData[sNameGet][label], label);
             if (info) setAttrs({
                 [`generate_${sName}_info`]: info
             });
