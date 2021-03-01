@@ -2,41 +2,62 @@ const myCrypto = require("crypto");
 const translation = require('../../translation.json')
 
 
-const state = {
-    repeating_weapons: {
-        hdjsadksajkl: {
-            weapon_ab: {
-                value: 5,
-                listeners: {
-                    change: []
-                }
-            }
-        }
-    },
-    AC: {value: 25, listeners: {change: []}}
+let state = {}
+
+const _setState = (newState) => {
+    state = Object.assign({}, newState)
 }
+
+const _getState = () => state
 
 const getAttrs = (attributes, callback) => {
-    callback(attributes.map(a => {
-        if (state[a]) return state[a]
-        const [section, id, field] = a.split("-")
-        return state[section.substring(0, section.length - 1)][id][field.substr(1)].value
-    }))
+    callback(attributes.reduce((obj, a) => {
+        if (state[a]) return {...obj, [a]: state[a].value}
+        const [section, rest] = a.split("-")
+        const [id, field] = rest.split(/_(.+)/)
+        return {...obj, [a]: state[section.slice(0, -1)]["value"][id][field]}
+    }, {}))
 }
 
-const setAttrs = (values, options, callback) => {
+const setAttrs = (values, options={silent: false}, callback) => {
     Object.keys(values).forEach(v => {
-        if (state[v]) Object.assign(state, {v: values[v]})
-        const [section, id, field] = v.split("-")
-        state[section.substring(0, section.length - 1)][id][field.substr(1)].listeners.change.forEach(f => f({
-            sourceType: "sheetworker",
-            sourceAttribute: v,
-            previousValue: state[section.substring(0, section.length - 1)][id][field.substr(1)].value,
-            newValue: values[v]
-        }))
-        Object.assign(state,{[section.substring(0, -1)]: {[id]: {[field.substr(1)]: {value: values[v]}}}})
+        if (state[v]) {
+            const eventInfo = {
+                sourceType: "sheetworker",
+                sourceAttribute: v,
+                previousValue: state[v].value,
+                newValue: values[v]
+            }
+            !options.silent && state[v].listeners.change.forEach(f => f(eventInfo))
+            state[v] = state[v] || {value: null, listeners: {change: []}}
+            state[v].value = values[v]
+            // Object.assign(state, {[v]: {value: values[v]}})
+        } else {
+            const [section, rest] = v.split("-")
+            const [id, field] = rest.split(/_(.+)/)
+            const eventInfo = {
+                sourceType: "sheetworker",
+                sourceAttribute: v,
+                previousValue: state[section.slice(0, -1)].value[id][field],
+                newValue: values[v]
+            }
+            !options.silent && state[section.slice(0, -1)].listeners.change.forEach(f => f(eventInfo))
+            state[section.slice(0, -1)] = state[section.slice(0, -1)] || {value: {}, listeners: {}}
+            state[section.slice(0, -1)].value[id] = state[section.slice(0, -1)].value[id] || {}
+            state[section.slice(0, -1)].value[id][field] = values[v]
+            // Object.assign(state,{[section.slice(0, -1)]: {value: {[id]: {[field]: values[v]}}}})
+        }
     })
     callback(values)
+}
+
+const removeRepeatingRow = RowID => {
+    const [, section, row] = RowID.split("_")
+    const eventInfo = {
+        removedInfo: state["repeating_" + section].value[row.replace("-", "")]
+    }
+    state["repeating_" + section].listeners.remove.forEach(f => f(eventInfo))
+    delete state["repeating_" + section].value[row.replace("-", "")]
 }
 
 const on = (eventsString, handler) => {
@@ -53,7 +74,7 @@ const on = (eventsString, handler) => {
 }
 
 const getSectionIDs = (section_name, callback) => {
-    callback(Object.keys(state["repeating_" + section_name]))
+    callback(Object.keys(state["repeating_" + section_name].value).map(v => "-" + v))
 }
 
 const generateRowID = () => {
@@ -67,11 +88,14 @@ const getTranslationByKey = (key) => {
 const getTranslationLanguage = () => "en"
 
 module.exports = {
+    _setState,
+    _getState,
     getAttrs,
     setAttrs,
+    removeRepeatingRow,
     getSectionIDs,
     generateRowID,
     getTranslationByKey,
     getTranslationLanguage,
-    on
+    on,
 }
