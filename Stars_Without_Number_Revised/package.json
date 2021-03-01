@@ -4,15 +4,21 @@
     "build": "tsc && run-p --race build:pug build:sass",
     "build:ts": "tsc",
     "build:pug": "pug -o . Source/Stars_Without_Number_Revised.pug",
-    "build:sass": "sass --no-source-map --style compressed Source/Stars_Without_Number_Revised.scss ./Stars_Without_Number_Revised.css"
+    "build:sass": "sass --no-source-map --style compressed Source/Stars_Without_Number_Revised.scss ./Stars_Without_Number_Revised.css",
+    "test": "jest --watch"
   },
   "devDependencies": {
+    "@types/jest": "^26.0.20",
     "@types/underscore": "^1.10.24",
+    "jest": "^26.6.3",
     "jstransformer-uglify-es": "^0.2.1",
     "npm-run-all": "^4.1.5",
     "pug": "^3.0.0",
     "pug-cli": "^1.0.0-alpha6",
     "sass": "^1.32.8",
+    "ts-jest": "^26.5.2",
+    "ts-node": "^9.1.1",
     "typescript": "^4.1.5"
-  }
+  },
+  "type": "module"
 }
